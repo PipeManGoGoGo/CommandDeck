@@ -33,7 +33,7 @@ function App() {
   useEffect(() => {
     if (!theme) return;
     document.documentElement.dataset.theme = theme;
-    localStorage.setItem("secbox-theme", theme);
+    localStorage.setItem("commanddeck-theme", theme);
     const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     if (themeColor) themeColor.content = theme === "light" ? "#ffffff" : "#070b12";
     void getCurrentWindow().setTheme(theme).catch(() => {});
@@ -43,7 +43,7 @@ function App() {
   useEffect(() => {
     const unlisten = listen("request-close-confirm", async () => {
       const yes = await confirm("有进程正在运行，确定退出吗？", {
-        title: "SecBox",
+        title: "CommandDeck",
         kind: "warning",
       });
       if (yes) {
@@ -71,11 +71,11 @@ function App() {
     return (
       <div className="h-screen flex flex-col items-center justify-center gap-4 app-backdrop text-white">
         <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-brand-400/25 bg-brand-500/10 shadow-glow">
-          <span className="text-lg font-bold tracking-tight text-brand-300">SB</span>
+          <span className="text-lg font-bold tracking-tight text-brand-300">CD</span>
           <span className="absolute inset-0 animate-ping rounded-2xl border border-brand-400/15" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium text-gray-200">正在打开 SecBox</p>
+          <p className="text-sm font-medium text-gray-200">正在打开 CommandDeck</p>
           <p className="mt-1 text-xs text-gray-500">加载你的工具工作区</p>
         </div>
       </div>

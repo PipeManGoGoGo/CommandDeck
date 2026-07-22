@@ -1,6 +1,6 @@
-# SecBox 开发约定
+# CommandDeck 开发约定
 
-项目背景、架构和功能设计见 `SecBox_DEV_GUIDE.md`。
+项目背景、架构和功能设计见 `CommandDeck_DEV_GUIDE.md`。
 
 ## 常用验证命令
 

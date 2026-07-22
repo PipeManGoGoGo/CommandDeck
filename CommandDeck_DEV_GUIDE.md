@@ -1,14 +1,14 @@
-# SecBox 开发指南
+# CommandDeck 开发指南
 
 ## 项目简介
 
-跨平台桌面工具管理器，管理本地安全工具和命令，支持一键在应用内交互式终端标签页启动执行。
+跨平台桌面命令行工具管理器，集中管理 CLI 工具、常用命令和笔记，支持一键在应用内交互式终端标签页启动执行。
 
 ---
 
 ## 核心定位
 
-面向渗透测试 / 红队的一站式本地工具管理器。解决的问题：日常用的工具（sqlmap、Cobalt Strike、BloodHound、Responder、impacket 等）散落在各处，每次要 cd 到工具目录、记启动命令、翻 shell history。SecBox 把它们按场景分好类，每个工具挂多条预设启动命令（如 `cd /opt/sqlmap && python3 sqlmap.py --wizard`），点击即开 pty 终端执行预设命令，命令跑完后用户继续在同一个终端里交互操作。
+面向所有依赖命令行工作的用户。开发、运维、数据处理、AI CLI、自动化脚本和安全测试工具通常散落在不同目录，使用时需要反复切换路径、记忆参数或查找 shell history。CommandDeck 把它们按场景分类，每个工具可挂多条预设命令（如 `cd ~/projects/api && npm run dev`），点击即打开 PTY 终端执行；命令结束后仍可在同一终端继续交互。
 
 ---
 
@@ -25,8 +25,8 @@
 - **笔记（核心功能）**：每个工具一个 Markdown 笔记区，用于记录使用技巧、常用参数、示例命令。支持渲染态查看 + 编辑态修改，渲染态中的命令片段可快速复制。笔记是使用工具时的主要参考入口，优先级高于命令列表。
 - **笔记快速查看面板**：终端运行时可通过 Tab 栏上的 📝 按钮或快捷键 `Cmd+E` 滑出笔记面板，终端不关闭，笔记只读，可拖拽调宽，方便边跑工具边查参数。
 - 退出时若有运行中进程弹确认框
-- 底部资源监控：整机 CPU/内存，以及 SecBox 管理的终端进程树 CPU、内存、进程数和线程数；每 3 秒刷新，60% 黄色、80% 红色警示
-- 数据存本地 JSON，首次启动预设默认分类：信息收集、漏洞利用、后渗透、权限提升、辅助工具
+- 底部资源监控：整机 CPU/内存，以及 CommandDeck 管理的终端进程树 CPU、内存、进程数和线程数；每 3 秒刷新，60% 黄色、80% 红色警示
+- 数据存本地 JSON，首次启动预设默认分类：开发工具、运维管理、数据处理、AI 与自动化、安全测试、其他工具
 
 ### 不做（后期）
 代理注入、日志持久化、健康检查
@@ -47,12 +47,14 @@
 
 | 变量 | 含义 |
 |---|---|
-| `{{TOOL_DIR}}` | 该工具的安装目录（如 `~/SecBox/tools/sqlmap`） |
+| `{{TOOL_DIR}}` | 该工具的安装目录（如 `~/CommandDeck/tools/my-cli`） |
 | `{{DOWNLOAD_URL}}` | 导入包里的下载地址 |
 
-用户配置统一工具根目录（如 `~/SecBox/tools/`），每个工具自动创建子目录。变量在导入时自动替换为实际路径。
+用户配置统一工具根目录（如 `~/CommandDeck/tools/`），每个工具自动创建子目录。变量在导入时自动替换为实际路径。
 
-### 导出格式（.secbox.json）
+### 导出格式（.commanddeck.json）
+
+导入器继续接受旧版 `.secbox.json` 和普通 `.json` 工具包；两者使用相同的数据结构。
 
 ```typescript
 interface ToolExport {
@@ -89,7 +91,7 @@ interface ExportedTool {
 
 ### 导入流程
 
-- 拖入或选择 `.secbox.json` 文件
+- 拖入或选择 `.commanddeck.json`、旧版 `.secbox.json` 或普通 `.json` 文件
 - 预览：显示包含的工具列表，已存在的标记跳过
 - 每个工具可展开修改：下载地址、安装类型、验证命令
 - 配置下载代理（如 `socks5://127.0.0.1:1080`）和工具目录
@@ -100,7 +102,7 @@ interface ExportedTool {
 
 - 工具列表右上角「导出」按钮
 - 勾选要导出的工具
-- 生成 `.secbox.json` 文件
+- 生成 `.commanddeck.json` 文件
 
 ---
 
@@ -179,8 +181,8 @@ interface Command {
 }
 
 interface AppSettings {
-  default_categories: string[]; // 首次初始化用：信息收集、漏洞利用、后渗透、权限提升、辅助工具
-  tool_root_dir: string;        // 统一工具目录，如 ~/SecBox/tools/
+  default_categories: string[]; // 首次初始化用：开发、运维、数据、AI、安全和其他工具
+  tool_root_dir: string;        // 统一工具目录，如 ~/CommandDeck/tools/
   download_proxy?: string;      // 下载代理，如 socks5://127.0.0.1:1080
   font_family?: string;         // 自定义字体
   font_size?: number;           // 字号
@@ -245,7 +247,7 @@ interface AppSettings {
 ## 目录结构
 
 ```
-secbox/
+commanddeck/
 ├── src-tauri/                  # Rust 后端
 │   ├── src/
 │   │   ├── main.rs             # 入口
@@ -282,8 +284,8 @@ secbox/
 
 ### Step 1 — 项目初始化
 ```bash
-npm create tauri-app@latest secbox -- --template react-ts
-cd secbox
+npm create tauri-app@latest commanddeck -- --template react-ts
+cd commanddeck
 npm install xterm xterm-addon-fit zustand
 ```
 Cargo.toml 添加依赖：`portable-pty`, `serde`, `serde_json`, `tokio`, `uuid`
@@ -323,7 +325,7 @@ Cargo.toml 添加依赖：`portable-pty`, `serde`, `serde_json`, `tokio`, `uuid`
 - 笔记用 `react-markdown` 渲染，编辑态用 `<textarea>`
 
 ### Step 8 — 导入导出
-- 导出：勾选工具 → 生成 `.secbox.json`
+- 导出：勾选工具 → 生成 `.commanddeck.json`
 - 导入：拖入文件 → 预览 → 配置代理和目录 → 执行安装命令
 - 安装模板选择 + 手动编辑
 - `{{TOOL_DIR}}` `{{DOWNLOAD_URL}}` 变量替换

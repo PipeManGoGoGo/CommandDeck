@@ -108,14 +108,16 @@ pub fn read_settings(app: AppHandle, state: State<'_, StorageState>) -> Result<S
     let dir = data_dir(&app)?;
     let path = dir.join("settings.json");
     if !path.exists() {
-        // v0.1 originally used a bundle identifier ending in `.app`. Migrate
-        // that settings file once so existing workspaces keep opening.
+        // Preserve the selected workspace across the CommandDeck rebrand and
+        // the earlier v0.1 bundle identifier change.
         if let Some(parent) = dir.parent() {
-            let legacy_path = parent.join("com.secbox.app").join("settings.json");
-            if legacy_path.exists() {
-                let data = fs::read_to_string(&legacy_path).map_err(|e| e.to_string())?;
-                write_json(&dir, "settings.json", &data)?;
-                return Ok(data);
+            for legacy_identifier in ["com.secbox.desktop", "com.secbox.app"] {
+                let legacy_path = parent.join(legacy_identifier).join("settings.json");
+                if legacy_path.exists() {
+                    let data = fs::read_to_string(&legacy_path).map_err(|e| e.to_string())?;
+                    write_json(&dir, "settings.json", &data)?;
+                    return Ok(data);
+                }
             }
         }
         return Ok("{}".to_string());
@@ -144,7 +146,7 @@ mod tests {
 
     #[test]
     fn json_write_replaces_existing_data_without_leaving_temp_files() {
-        let dir = std::env::temp_dir().join(format!("secbox-storage-test-{}", Uuid::new_v4()));
+        let dir = std::env::temp_dir().join(format!("commanddeck-storage-test-{}", Uuid::new_v4()));
         fs::create_dir_all(&dir).expect("create test directory");
 
         write_json(&dir, "tools.json", "[1]").expect("write initial data");

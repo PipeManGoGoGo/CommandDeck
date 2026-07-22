@@ -55,8 +55,8 @@ export function ExportModal({ onClose }: Props) {
     };
 
     const path = await save({
-      defaultPath: "secbox-tools.secbox.json",
-      filters: [{ name: "SecBox", extensions: ["json"] }],
+      defaultPath: "commanddeck-tools.commanddeck.json",
+      filters: [{ name: "CommandDeck", extensions: ["json"] }],
     });
 
     if (path) {
@@ -79,7 +79,7 @@ export function ExportModal({ onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-5 backdrop-blur-sm">
       <div role="dialog" aria-modal="true" aria-labelledby="export-title" className="flex max-h-[82vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-gray-750 bg-gray-850 shadow-panel">
         <div className="flex items-center justify-between border-b border-gray-750 px-5 py-4">
-          <div><h2 id="export-title" className="text-sm font-semibold text-gray-100">导出工具</h2><p className="mt-0.5 text-[11px] text-gray-500">创建可分享的 SecBox 工具包</p></div>
+          <div><h2 id="export-title" className="text-sm font-semibold text-gray-100">导出工具</h2><p className="mt-0.5 text-[11px] text-gray-500">创建可分享的 CommandDeck 工具包</p></div>
           <button type="button" onClick={onClose} disabled={exporting} className="rounded-md px-2 py-1 text-gray-500 hover:bg-gray-750 hover:text-gray-200 disabled:opacity-40" aria-label="关闭">✕</button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-2">

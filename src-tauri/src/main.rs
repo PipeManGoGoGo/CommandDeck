@@ -1,3 +1,3 @@
 fn main() {
-    secbox_lib::run();
+    commanddeck_lib::run();
 }

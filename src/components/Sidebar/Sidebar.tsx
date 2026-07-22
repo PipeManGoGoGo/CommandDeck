@@ -34,11 +34,11 @@ export function Sidebar() {
     <aside className="w-56 shrink-0 bg-gray-925/95 border-r border-gray-800 flex flex-col h-full">
       <div className="flex h-[61px] items-center gap-3 border-b border-gray-800 px-4">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-400/20 bg-brand-500/10 text-xs font-bold text-brand-300 shadow-glow">
-          SB
+          CD
         </div>
         <div className="min-w-0">
-          <div className="text-sm font-semibold tracking-wide text-gray-100">SecBox</div>
-          <div className="text-[10px] uppercase tracking-[0.18em] text-gray-500">Security workspace</div>
+          <div className="text-sm font-semibold tracking-wide text-gray-100">CommandDeck</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-gray-500">CLI workspace</div>
         </div>
       </div>
       <div className="px-3 pb-2 pt-5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">

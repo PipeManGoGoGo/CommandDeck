@@ -16,7 +16,7 @@ export function FilterBar() {
     <header className="flex min-h-[61px] items-center gap-4 border-b border-gray-800 bg-gray-925/75 px-5 backdrop-blur">
       <div className="min-w-0 shrink-0">
         <h1 className="text-sm font-semibold text-gray-100">工具工作台</h1>
-        <p className="mt-0.5 text-[11px] text-gray-500">管理并快速启动你的安全工具</p>
+        <p className="mt-0.5 text-[11px] text-gray-500">管理并快速启动你的命令行工具</p>
       </div>
       <div className="relative ml-auto w-full max-w-sm">
         <input

@@ -1,7 +1,7 @@
 {
-  "productName": "SecBox",
+  "productName": "CommandDeck",
   "version": "0.1.0",
-  "identifier": "com.secbox.desktop",
+  "identifier": "com.commanddeck.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
@@ -25,7 +25,7 @@
   "app": {
     "windows": [
       {
-        "title": "SecBox",
+        "title": "CommandDeck",
         "width": 1200,
         "height": 800,
         "minWidth": 900,

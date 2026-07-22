@@ -3,11 +3,12 @@ import type { Category, Tool, ToolTerminal, ToolViewState, AppView, Settings, Th
 import * as tauri from "../utils/tauri";
 
 const DEFAULT_CATEGORIES: Omit<Category, "id">[] = [
-  { name: "信息收集", sort_order: 0, color: "#3b82f6" },
-  { name: "漏洞利用", sort_order: 1, color: "#ef4444" },
-  { name: "后渗透", sort_order: 2, color: "#f59e0b" },
-  { name: "权限提升", sort_order: 3, color: "#8b5cf6" },
-  { name: "辅助工具", sort_order: 4, color: "#10b981" },
+  { name: "开发工具", sort_order: 0, color: "#3b82f6" },
+  { name: "运维管理", sort_order: 1, color: "#10b981" },
+  { name: "数据处理", sort_order: 2, color: "#f59e0b" },
+  { name: "AI 与自动化", sort_order: 3, color: "#8b5cf6" },
+  { name: "安全测试", sort_order: 4, color: "#ef4444" },
+  { name: "其他工具", sort_order: 5, color: "#64748b" },
 ];
 
 function generateId(): string {

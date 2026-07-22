@@ -101,7 +101,7 @@ export function ResourceMonitor() {
         className={`min-w-0 truncate rounded-md border px-2 py-1 text-[10px] tabular-nums ${
           snapshot.terminalInstances > 0 ? levelClass[managedLevel] : "border-gray-750 bg-gray-850 text-gray-500"
         }`}
-        title={`SecBox 工具：${snapshot.terminalInstances} 个终端实例，CPU ${snapshot.managedCpuPercent.toFixed(1)}%，内存 ${formatBytes(snapshot.managedMemoryBytes)}，${snapshot.managedProcesses} 个进程，${snapshot.managedThreads} 个线程`}
+        title={`CommandDeck 工具：${snapshot.terminalInstances} 个终端实例，CPU ${snapshot.managedCpuPercent.toFixed(1)}%，内存 ${formatBytes(snapshot.managedMemoryBytes)}，${snapshot.managedProcesses} 个进程，${snapshot.managedThreads} 个线程`}
       >
         工具 {snapshot.terminalInstances}
         {snapshot.terminalInstances > 0 && (

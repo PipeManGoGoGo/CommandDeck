@@ -36,9 +36,9 @@ export function SettingsView() {
     <div className="app-backdrop flex flex-1 items-center justify-center p-6">
       <div className="w-full max-w-lg rounded-2xl border border-gray-750 bg-gray-850/90 p-8 shadow-panel">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-brand-400/20 bg-brand-500/10 text-sm font-bold text-brand-300">SB</div>
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-brand-400/20 bg-brand-500/10 text-sm font-bold text-brand-300">CD</div>
           <div>
-            <h1 className="text-lg font-semibold text-gray-100">{settings ? "工作区设置" : "欢迎使用 SecBox"}</h1>
+            <h1 className="text-lg font-semibold text-gray-100">{settings ? "工作区设置" : "欢迎使用 CommandDeck"}</h1>
             <p className="text-[11px] text-gray-500">macOS · Windows</p>
           </div>
         </div>
@@ -65,7 +65,7 @@ export function SettingsView() {
               value={baseDir}
               onChange={(e) => setBaseDir(e.target.value)}
               className="min-w-0 flex-1 rounded-lg border border-gray-750 bg-gray-925 px-3 py-2.5 font-mono text-sm text-gray-100 placeholder-gray-600 focus:border-brand-500/60 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
-              placeholder={isWindows ? "C:\\Users\\name\\SecBox" : "/Users/name/SecBox"}
+              placeholder={isWindows ? "C:\\Users\\name\\CommandDeck" : "/Users/name/CommandDeck"}
             />
             <button
               onClick={handleChooseDir}
