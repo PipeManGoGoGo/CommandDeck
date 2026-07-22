@@ -1,0 +1,15 @@
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+.DS_Store
+*.log
+*.dmg
+*.msi
+*.app/
+.env
+.env.*
+!.env.example
+*.zip
+coverage/
+.codex/
