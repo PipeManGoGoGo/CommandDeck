@@ -86,8 +86,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: v__VERSION__
-          releaseName: SecBox v__VERSION__
-          releaseBody: "Download the latest version for your platform."
+          releaseName: CommandDeck v__VERSION__
+          releaseBody: |
+            CommandDeck 的首个公开预览版。它可以集中管理并运行开发、运维、数据处理、AI CLI、自动化和安全测试等命令行工具。
+
+            当前安装包尚未进行正式代码签名或公证，macOS 和 Windows 可能显示安全提示。请仅从本仓库下载，并在确认来源后运行。
           releaseDraft: false
-          prerelease: false
+          prerelease: true
           args: --target ${{ matrix.target }}
