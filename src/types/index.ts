@@ -63,6 +63,7 @@ export interface ExportedTool {
   name: string;
   category: string;
   description?: string;
+  icon?: string;
   download_url: string;
   install_type: "git" | "binary" | "python" | "custom";
   install_command: string;

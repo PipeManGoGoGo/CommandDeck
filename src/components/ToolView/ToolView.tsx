@@ -61,6 +61,13 @@ export function ToolView({ toolId }: Props) {
           >
             &larr;
           </button>
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gray-750 bg-gray-850">
+            {tool.icon ? (
+              <img src={tool.icon} alt="" className="h-6 w-6 object-contain" />
+            ) : (
+              <span className="text-xs font-bold text-brand-300">{tool.name.charAt(0).toUpperCase()}</span>
+            )}
+          </div>
           <div className="min-w-0">
             <span className="block truncate text-sm font-semibold text-gray-100">{tool.name}</span>
             <span className="block truncate text-[11px] text-gray-500">{category?.name || "未分类"}</span>

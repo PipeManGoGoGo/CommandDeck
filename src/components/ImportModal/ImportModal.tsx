@@ -19,6 +19,7 @@ function isExportedTool(value: unknown): value is ExportedTool {
     typeof tool.name === "string" &&
     tool.name.trim().length > 0 &&
     typeof tool.category === "string" &&
+    (tool.icon === undefined || typeof tool.icon === "string") &&
     Array.isArray(tool.commands) &&
     tool.commands.every(
       (command) =>
@@ -121,6 +122,7 @@ export function ImportModal({ onClose }: Props) {
           name: importedTool.name.trim(),
           category_id: catId,
           description: importedTool.description,
+          icon: importedTool.icon,
           commands: importedTool.commands.map((command) => ({
             id: crypto.randomUUID(),
             label: command.label,
@@ -183,6 +185,7 @@ export function ImportModal({ onClose }: Props) {
                     checked={t.selected}
                     onChange={() => toggleTool(i)}
                   />
+                  {t.icon && <img src={t.icon} alt="" className="h-8 w-8 shrink-0 rounded-lg object-contain" />}
                   <div className="flex-1 min-w-0">
                     <span className="text-sm">{t.name}</span>
                     <span className="text-xs text-gray-500 ml-2">

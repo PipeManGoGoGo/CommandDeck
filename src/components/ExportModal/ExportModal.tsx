@@ -40,6 +40,7 @@ export function ExportModal({ onClose }: Props) {
         name: t.name,
         category: catMap.get(t.category_id) || "未分类",
         description: t.description,
+        icon: t.icon,
         download_url: t.download_url || "",
         install_type: "custom" as const,
         install_command: t.install_command || "",
@@ -94,6 +95,7 @@ export function ExportModal({ onClose }: Props) {
                 onChange={() => toggle(tool.id)}
                 className="rounded"
               />
+              {tool.icon && <img src={tool.icon} alt="" className="h-8 w-8 shrink-0 rounded-lg object-contain" />}
               <span className="text-sm">{tool.name}</span>
             </label>
           ))}

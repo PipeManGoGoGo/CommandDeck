@@ -67,6 +67,7 @@ interface ExportedTool {
   name: string;
   category: string;           // 分类名，导入时自动匹配或新建
   description?: string;
+  icon?: string;              // HTTPS URL 或本地图片转换后的 data URL
   download_url: string;       // GitHub release / 源码 URL
   install_type: "git" | "binary" | "python" | "custom"; // 安装模板类型
   install_command: string;    // 模板生成或手动填写，用 {{TOOL_DIR}} {{DOWNLOAD_URL}}
