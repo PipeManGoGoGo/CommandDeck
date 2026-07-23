@@ -2,6 +2,10 @@
 name = "commanddeck"
 version = "0.1.0"
 edition = "2021"
+description = "A local desktop workspace for organizing and running command-line tools."
+repository = "https://github.com/PipeManGoGoGo/CommandDeck"
+homepage = "https://github.com/PipeManGoGoGo/CommandDeck"
+publish = false
 
 [lib]
 name = "commanddeck_lib"

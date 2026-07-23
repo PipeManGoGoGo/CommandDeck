@@ -2,6 +2,15 @@
   "name": "commanddeck",
   "private": true,
   "version": "0.1.0",
+  "description": "A local desktop workspace for organizing and running command-line tools.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PipeManGoGoGo/CommandDeck.git"
+  },
+  "homepage": "https://github.com/PipeManGoGoGo/CommandDeck#readme",
+  "bugs": {
+    "url": "https://github.com/PipeManGoGoGo/CommandDeck/issues"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

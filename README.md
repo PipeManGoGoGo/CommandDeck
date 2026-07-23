@@ -2,6 +2,8 @@
 
 CommandDeck 是一个面向命令行工具的本地桌面工作台。它把散落的 CLI 工具、常用命令和 Markdown 笔记集中管理，并通过应用内 PTY 终端直接运行和持续交互。
 
+[GitHub 仓库](https://github.com/PipeManGoGoGo/CommandDeck) · [下载发布版本](https://github.com/PipeManGoGoGo/CommandDeck/releases)
+
 它不限定工具类型：开发、运维、数据处理、AI CLI、自动化脚本和安全测试工具都可以放进同一个工作区。每个工具可以配置多条启动命令，并同时运行多个相互独立的终端实例。
 
 ## 主要能力
