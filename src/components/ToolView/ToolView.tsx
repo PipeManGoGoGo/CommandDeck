@@ -3,6 +3,7 @@ import { useStore } from "../../store";
 import { ToolDetail } from "../ToolDetail";
 import { Terminal } from "../Terminal";
 import { NotesPanel } from "../NotesPanel";
+import { message } from "@tauri-apps/plugin-dialog";
 
 interface Props {
   toolId: string;
@@ -20,6 +21,7 @@ export function ToolView({ toolId }: Props) {
   const closeTerminal = useStore((s) => s.closeTerminal);
   const restartTerminal = useStore((s) => s.restartTerminal);
   const [showNotes, setShowNotes] = useState(false);
+  const [terminalActionId, setTerminalActionId] = useState<string | null>(null);
 
   const terminals = tv?.terminals || [];
   const activeSubTab = tv?.activeSubTab || "detail";
@@ -39,7 +41,33 @@ export function ToolView({ toolId }: Props) {
   if (!tool) return <div className="p-4 text-gray-400">工具未找到</div>;
 
   const handleCloseTerminal = async (termId: string) => {
-    await closeTerminal(toolId, termId);
+    if (terminalActionId) return;
+    setTerminalActionId(termId);
+    try {
+      await closeTerminal(toolId, termId);
+    } catch (error) {
+      await message(`关闭失败，终端仍保留，可重试：${String(error)}`, {
+        title: tool.name,
+        kind: "error",
+      });
+    } finally {
+      setTerminalActionId(null);
+    }
+  };
+
+  const handleRestartTerminal = async (termId: string) => {
+    if (terminalActionId) return;
+    setTerminalActionId(termId);
+    try {
+      await restartTerminal(toolId, termId);
+    } catch (error) {
+      await message(`重启失败，原终端仍保留：${String(error)}`, {
+        title: tool.name,
+        kind: "error",
+      });
+    } finally {
+      setTerminalActionId(null);
+    }
   };
 
   const handleAddTerminal = async () => {
@@ -110,8 +138,9 @@ export function ToolView({ toolId }: Props) {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleCloseTerminal(t.id);
+                void handleCloseTerminal(t.id);
               }}
+              disabled={terminalActionId !== null}
               className="ml-2 rounded p-0.5 text-gray-600 hover:bg-red-400/10 hover:text-red-300"
               title="关闭终端"
             >
@@ -165,14 +194,16 @@ export function ToolView({ toolId }: Props) {
           >
             <div className="flex min-h-[40px] items-center gap-2 border-b border-gray-800 bg-gray-850 px-3 shrink-0">
               <button
-                onClick={() => restartTerminal(toolId, term.id)}
+                onClick={() => { void handleRestartTerminal(term.id); }}
+                disabled={terminalActionId !== null}
                 className="rounded-md px-2 py-1 text-xs text-gray-400 hover:bg-gray-750 hover:text-gray-100"
                 title="重启终端"
               >
                 重启
               </button>
               <button
-                onClick={() => handleCloseTerminal(term.id)}
+                onClick={() => { void handleCloseTerminal(term.id); }}
+                disabled={terminalActionId !== null}
                 className="rounded-md px-2 py-1 text-xs text-red-400 hover:bg-red-400/10 hover:text-red-300"
                 title="停止终端"
               >

@@ -6,7 +6,7 @@ import { ToolCatalog } from "./components/ToolCatalog";
 import { SettingsView } from "./components/SettingsView";
 import { ResourceMonitor } from "./components/ResourceMonitor";
 import { confirmClose } from "./utils/tauri";
-import { confirm } from "@tauri-apps/plugin-dialog";
+import { confirm, message } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
@@ -47,7 +47,14 @@ function App() {
         kind: "warning",
       });
       if (yes) {
-        await confirmClose();
+        try {
+          await confirmClose();
+        } catch (closeError) {
+          await message(`退出失败，终端仍保留，可重试：${String(closeError)}`, {
+            title: "CommandDeck",
+            kind: "error",
+          });
+        }
       }
     });
     return () => { unlisten.then((fn) => fn()); };

@@ -4,12 +4,12 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::process::Command;
+use std::sync::Arc;
 use tauri::State;
 
 #[derive(Debug, Clone)]
 struct ProcessInfo {
     pid: u32,
-    parent_pid: u32,
     cpu_percent: f32,
     memory_bytes: u64,
     threads: usize,
@@ -30,30 +30,40 @@ pub struct ResourceSnapshot {
 
 #[tauri::command]
 pub async fn get_resource_snapshot(state: State<'_, PtyState>) -> Result<ResourceSnapshot, String> {
-    let (root_pids, terminal_instances) = {
+    let sessions = {
         let ptys = state
             .ptys
             .lock()
             .map_err(|_| "pty state lock poisoned".to_string())?;
-        let roots = ptys
-            .values()
-            .filter_map(|handle| handle.child.process_id())
-            .collect::<HashSet<_>>();
-        (roots, ptys.len())
+        ptys.values().map(Arc::clone).collect::<Vec<_>>()
     };
+    let terminal_instances = sessions.len();
 
-    tauri::async_runtime::spawn_blocking(move || collect_snapshot(root_pids, terminal_instances))
-        .await
-        .map_err(|error| error.to_string())?
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut managed_ids = HashSet::new();
+        for session in sessions {
+            managed_ids.extend(session.owned_process_ids()?);
+        }
+        collect_snapshot(managed_ids, terminal_instances)
+    })
+    .await
+    .map_err(|error| error.to_string())?
 }
 
 fn collect_snapshot(
-    root_pids: HashSet<u32>,
+    owned_process_ids: HashSet<u32>,
     terminal_instances: usize,
 ) -> Result<ResourceSnapshot, String> {
     let (processes, system_cpu_percent, system_memory_used_bytes, system_memory_total_bytes) =
         collect_platform_metrics()?;
-    let managed_ids = descendant_processes(&processes, &root_pids);
+    let managed_ids = processes
+        .iter()
+        .filter_map(|process| {
+            owned_process_ids
+                .contains(&process.pid)
+                .then_some(process.pid)
+        })
+        .collect::<HashSet<_>>();
 
     let mut managed_cpu_percent = 0.0;
     let mut managed_memory_bytes = 0u64;
@@ -77,23 +87,6 @@ fn collect_snapshot(
         managed_threads,
         terminal_instances,
     })
-}
-
-fn descendant_processes(processes: &[ProcessInfo], roots: &HashSet<u32>) -> HashSet<u32> {
-    let mut managed = roots.clone();
-    loop {
-        let before = managed.len();
-        for process in processes {
-            if managed.contains(&process.parent_pid) {
-                managed.insert(process.pid);
-            }
-        }
-        if managed.len() == before {
-            break;
-        }
-    }
-    managed.retain(|pid| processes.iter().any(|process| process.pid == *pid));
-    managed
 }
 
 fn bounded_percent(value: f32) -> f32 {
@@ -149,7 +142,6 @@ fn collect_unix_processes() -> Result<Vec<ProcessInfo>, String> {
         let Some(pid) = columns[0].parse::<u32>().ok() else {
             continue;
         };
-        let parent_pid = columns[1].parse::<u32>().unwrap_or(0);
         let raw_cpu = columns[2].parse::<f32>().unwrap_or(0.0);
         let memory_bytes = columns[3].parse::<u64>().unwrap_or(0).saturating_mul(1024);
         #[cfg(target_os = "macos")]
@@ -159,7 +151,6 @@ fn collect_unix_processes() -> Result<Vec<ProcessInfo>, String> {
 
         processes.push(ProcessInfo {
             pid,
-            parent_pid,
             cpu_percent: raw_cpu / logical_cpus,
             memory_bytes,
             threads,
@@ -299,7 +290,6 @@ $processes = @(Get-CimInstance Win32_Process | ForEach-Object {
         .flatten()
         .map(|process| ProcessInfo {
             pid: process["pid"].as_u64().unwrap_or(0) as u32,
-            parent_pid: process["parentPid"].as_u64().unwrap_or(0) as u32,
             cpu_percent: process["cpu"].as_f64().unwrap_or(0.0) as f32,
             memory_bytes: process["memory"].as_u64().unwrap_or(0),
             threads: process["threads"].as_u64().unwrap_or(0) as usize,
@@ -315,46 +305,43 @@ $processes = @(Get-CimInstance Win32_Process | ForEach-Object {
 
 #[cfg(test)]
 mod tests {
-    use super::{collect_snapshot, descendant_processes, ProcessInfo};
+    use super::{collect_snapshot, ProcessInfo};
     use std::collections::HashSet;
 
     #[test]
-    fn finds_the_complete_managed_process_tree() {
-        let processes = vec![
+    fn only_counts_processes_owned_by_the_platform_scope() {
+        let processes = [
             ProcessInfo {
                 pid: 10,
-                parent_pid: 1,
                 cpu_percent: 0.0,
                 memory_bytes: 0,
                 threads: 1,
             },
             ProcessInfo {
                 pid: 11,
-                parent_pid: 10,
                 cpu_percent: 0.0,
                 memory_bytes: 0,
                 threads: 1,
             },
             ProcessInfo {
                 pid: 12,
-                parent_pid: 11,
                 cpu_percent: 0.0,
                 memory_bytes: 0,
                 threads: 1,
             },
             ProcessInfo {
                 pid: 20,
-                parent_pid: 1,
                 cpu_percent: 0.0,
                 memory_bytes: 0,
                 threads: 1,
             },
         ];
-        let roots = HashSet::from([10]);
-        assert_eq!(
-            descendant_processes(&processes, &roots),
-            HashSet::from([10, 11, 12])
-        );
+        let owned = HashSet::from([10, 12]);
+        let selected = processes
+            .iter()
+            .filter_map(|process| owned.contains(&process.pid).then_some(process.pid))
+            .collect::<HashSet<_>>();
+        assert_eq!(selected, HashSet::from([10, 12]));
     }
 
     #[test]

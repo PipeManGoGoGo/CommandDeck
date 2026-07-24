@@ -338,9 +338,7 @@ export const useStore = create<AppState>((set, get) => ({
     const toolView = get().toolViews[id];
     if (toolView) {
       await Promise.all(
-        toolView.terminals
-          .filter((terminal) => terminal.alive)
-          .map((terminal) => tauri.killPty(terminal.ptyId).catch(() => {}))
+        toolView.terminals.map((terminal) => tauri.killPty(terminal.ptyId))
       );
     }
     const tools = get().tools.filter((t) => t.id !== id);
@@ -427,7 +425,7 @@ export const useStore = create<AppState>((set, get) => ({
     };
 
     if (!get().tools.some((candidate) => candidate.id === toolId)) {
-      await tauri.killPty(ptyId).catch(() => {});
+      await tauri.killPty(ptyId);
       return;
     }
     get().addTerminalToView(toolId, terminal);
@@ -439,9 +437,7 @@ export const useStore = create<AppState>((set, get) => ({
     const term = tv.terminals.find((t) => t.id === termId);
     if (!term) return;
 
-    if (term.alive) {
-      await tauri.killPty(term.ptyId).catch(() => {});
-    }
+    await tauri.killPty(term.ptyId);
 
     set((s) => {
       const current = s.toolViews[toolId];
@@ -465,9 +461,7 @@ export const useStore = create<AppState>((set, get) => ({
     const term = tv.terminals.find((t) => t.id === termId);
     if (!term) return;
 
-    if (term.alive) {
-      await tauri.killPty(term.ptyId).catch(() => {});
-    }
+    await tauri.killPty(term.ptyId);
 
     const cwd = get().settings?.baseDir || undefined;
     const ptyId = await tauri.createPty(term.command, cwd);

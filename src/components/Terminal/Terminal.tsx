@@ -4,7 +4,7 @@ import { FitAddon } from "xterm-addon-fit";
 import { SearchAddon } from "xterm-addon-search";
 import "xterm/css/xterm.css";
 import { useStore } from "../../store";
-import { writePty, resizePty, startPty } from "../../utils/tauri";
+import { killPty, writePty, resizePty, startPty } from "../../utils/tauri";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
@@ -62,6 +62,7 @@ export function Terminal({ terminalId }: Props) {
 
   const [showSearch, setShowSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [runtimeError, setRuntimeError] = useState<string | null>(null);
 
   useEffect(() => {
     const el = boxRef.current;
@@ -84,9 +85,39 @@ export function Terminal({ terminalId }: Props) {
       markTerminalExited(terminalId);
     });
 
-    Promise.all([unlistenOutput, unlistenExit]).then(() => {
-      if (!disposed) startPty(ptyId).catch(() => {});
+    const unlistenCleanupError = listen<string>(`pty_cleanup_error_${ptyId}`, (event) => {
+      setRuntimeError(`终端清理失败，可重试关闭：${event.payload}`);
     });
+
+    void Promise.all([unlistenOutput, unlistenExit, unlistenCleanupError])
+      .then(() => {
+        if (!disposed) {
+          startPty(ptyId).catch((error) => {
+            setRuntimeError(`终端启动握手失败：${String(error)}`);
+          });
+        }
+      })
+      .catch(async (error) => {
+        const registrationError = `终端监听注册失败，无法启动：${String(error)}`;
+        if (!disposed) {
+          setRuntimeError(`${registrationError}；正在清理未启动的终端。`);
+        }
+
+        try {
+          await killPty(ptyId);
+          if (!disposed) {
+            setRuntimeError(`${registrationError}；未启动的终端已清理。`);
+          }
+        } catch (cleanupError) {
+          if (!disposed) {
+            setRuntimeError(
+              `${registrationError}；清理失败：${String(cleanupError)}。仍可重试或关闭终端。`
+            );
+          }
+        } finally {
+          markTerminalExited(terminalId);
+        }
+      });
 
     const onPaste = (e: ClipboardEvent) => {
       e.preventDefault();
@@ -195,15 +226,20 @@ export function Terminal({ terminalId }: Props) {
     });
     el.addEventListener("paste", onPaste, true);
 
+    const safelyUnlisten = (unlisten: Promise<() => void>) => {
+      void unlisten.then((fn) => fn()).catch(() => {});
+    };
+
     return () => {
       disposed = true;
       cancelAnimationFrame(raf);
       visibilityRo.disconnect();
       cleanup?.();
       el.removeEventListener("paste", onPaste, true);
-      unlistenOutput.then((fn) => fn());
-      unlistenExit.then((fn) => fn());
-      unlistenDrop.then((fn) => fn());
+      safelyUnlisten(unlistenOutput);
+      safelyUnlisten(unlistenExit);
+      safelyUnlisten(unlistenCleanupError);
+      safelyUnlisten(unlistenDrop);
     };
   }, [terminalId, ptyId, markTerminalExited]);
 
@@ -211,6 +247,12 @@ export function Terminal({ terminalId }: Props) {
 
   return (
     <div ref={boxRef} className="flex-1 min-h-0 relative">
+      {runtimeError && (
+        <div className="absolute inset-x-2 top-2 z-40 flex items-start justify-between gap-3 rounded-lg border border-red-400/30 bg-red-950/95 px-3 py-2 text-xs text-red-200 shadow-lg">
+          <span className="break-words">{runtimeError}</span>
+          <button type="button" onClick={() => setRuntimeError(null)} className="shrink-0 text-red-300 hover:text-white" aria-label="关闭错误提示">✕</button>
+        </div>
+      )}
       {showSearch && (
         <div className="absolute top-2 right-2 z-50 flex items-center gap-1 bg-gray-800 border border-gray-600 rounded px-2 py-1 shadow-lg">
           <input

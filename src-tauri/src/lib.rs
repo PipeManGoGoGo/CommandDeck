@@ -1,4 +1,5 @@
 mod commands;
+mod process_scope;
 mod state;
 
 use state::{PtyState, StorageState};

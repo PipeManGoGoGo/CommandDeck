@@ -56,7 +56,7 @@ npm run tauri build
 
 ## 构建发布
 
-`.github/workflows/build.yml` 会在原生 macOS 与 Windows runner 上生成安装包，同时保留 Linux 构建。推送 `v*` 标签或手动触发 workflow 即可构建。
+`.github/workflows/build.yml` 的手动触发（`workflow_dispatch`）只运行 quality 检查，不构建安装包或创建 Release。只有推送 `v*` tag 才会构建 macOS ARM、macOS Intel、Windows、Linux 四平台产物，并在汇总校验后创建 Draft Pre-release。
 
 ## 数据位置
 
