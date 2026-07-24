@@ -1,24 +1,25 @@
 # CommandDeck 项目现状（AI 交接）
 
-> 最后核验：2026-07-24。当前状态是本地 `v0.1.1` 发布候选工作树，尚未提交、推送、打 tag 或创建远端 Release。后续 AI 应先核对工作树、CI 和 GitHub Release 的实际状态。
+> 最后核验：2026-07-24。当前状态是本地替代发布候选 `v0.1.2` 工作树，Windows API feature 修复与版本升级尚未提交、推送、打 tag 或创建远端 Release。后续 AI 应先核对工作树、CI 和 GitHub Release 的实际状态。
 
 ## 一句话结论
 
-CommandDeck `v0.1.1` 已在本地形成发布候选：应用版本源统一，PTY/进程归属稳定性改动与测试已进入工作树，发布流水线改为先收集四平台产物再创建 Draft Pre-release。远端当前仍应按 `v0.1.0` 已发布、`v0.1.1` 未发布理解。
+CommandDeck `v0.1.2` 已在本地形成替代发布候选：保留 `v0.1.1` 的 PTY/进程归属稳定性改动，并补齐 Windows 原生 Job API 编译所需 feature。不可变的 `v0.1.1` tag 已存在但构建不完整，且没有对应 Release；`v0.1.2` 尚未提交或打 tag。
 
 ## 仓库与发布状态
 
 - 仓库：`https://github.com/PipeManGoGoGo/CommandDeck`，公开仓库，默认分支 `main`。
 - 远端已有 `v0.1.0` Pre-release，包含 macOS ARM/Intel、Windows MSI/NSIS、Linux AppImage/DEB/RPM 等 9 个资产。
-- 本地 `package.json`、`package-lock.json`、Tauri config、Cargo manifest/lock 已统一为 `0.1.1`；这些改动尚未提交或发布。
-- `v0.1.1` 候选内容包括自定义工具图标、PTY 纳管进程树清理、自然退出/关闭失败恢复、资源归属统计与 Rust 测试补强。
+- 不可变的 `v0.1.1` tag 指向 `d19cdb0`。GitHub Actions run `30090343426` 中 macOS ARM、macOS Intel 和 Linux 构建成功；Windows 因缺少 `Win32_System_Threading` feature 构建失败，release job 随之跳过，仓库没有创建 `v0.1.1` Release。
+- 本地 `v0.1.2` 已补入 `Win32_System_Threading` feature，并将 `package.json`、`package-lock.json`、Tauri config、Cargo manifest/lock 统一到 `0.1.2`；这些改动尚未提交、打 tag 或发布。
+- `v0.1.2` 候选内容包括自定义工具图标、PTY 纳管进程树清理、自然退出/关闭失败恢复、资源归属统计、Rust 测试补强和 Windows 原生 API feature 修复。
 - quality job 使用 npm lock 与 Cargo `--locked`；tag 构建前会校验 `v` 标签和全部应用版本源一致。
 - 四个 tauri-action 矩阵项只负责构建并上传 artifacts。仅 `v*` tag 会进入 build；单一 Ubuntu release job 校验产物覆盖后用 `RELEASE_NOTES.md` 创建 Draft、Pre-release。`workflow_dispatch` 不构建或创建 Release。
 - 本地工作树包含多个协作角色的未提交改动；不得把本文件视为远端 CI、tag 或 Release 已成功的证明。
 
-历史发布来源仍需保留记录：`v0.1.0` tag 指向 `066f2d3`，tag 触发的安装包构建失败；现有 9 个资产随后由 `4fc2036` 的手动 workflow 构建。`v0.1.1` 流水线通过“tag 构建 → artifacts → 单一 Draft Release”的方式避免重复这一来源不一致。
+历史发布来源仍需保留记录：`v0.1.0` tag 指向 `066f2d3`，tag 触发的安装包构建失败；现有 9 个资产随后由 `4fc2036` 的手动 workflow 构建。`v0.1.2` 继续使用“tag 构建 → artifacts → 单一 Draft Release”流水线；只有四平台构建与资产覆盖全部成功后才会进入 release job。
 
-## `v0.1.1` 候选能力
+## `v0.1.2` 候选能力
 
 ### 工作区与工具目录
 
@@ -66,21 +67,21 @@ CommandDeck `v0.1.1` 已在本地形成发布候选：应用版本源统一，PT
 | Linux 核心模块条件编译 | 通过，Unix process scope/root watcher 核心模块的 Linux 条件代码已完成编译检查。 |
 | 完整 Tauri Linux 交叉检查 | 当前环境缺少目标平台 GTK/GLib 开发库，完整 Tauri 交叉检查未完成；不能据此声称 Linux 桌面包已经过本地交叉构建验证。 |
 | workflow YAML/发布逻辑 | Ruby YAML 解析、actionlint v1.7.7、静态 job/产物断言均通过；尚未通过 tag 在 GitHub Actions 实跑。 |
-| 版本一致性 | `v0.1.1` 正向检查通过，`v0.1.2` 负向检查按预期拒绝；全部应用版本源为 `0.1.1`。 |
-| 远端发布 | 未执行；没有提交、推送、tag 或 `v0.1.1` Release。 |
+| 版本一致性 | 通过；六处应用版本源均为 `0.1.2`，并确认 `Win32_System_Threading` feature 保留。 |
+| 远端发布 | `v0.1.1` tag 已存在但没有 Release；本地 `v0.1.2` 尚未提交、推送、打 tag 或创建 Release。 |
 
 尚未覆盖：
 
 - 前端单元/组件测试和端到端测试；仓库当前没有对应脚本。
 - GUI 启动冒烟、本机完整 `tauri build`、安装/升级/卸载验证。
-- `v0.1.1` 的 macOS ARM/Intel、Windows、Linux 原生安装包矩阵构建与实机运行。
+- `v0.1.2` 的 macOS ARM/Intel、Windows、Linux 原生安装包矩阵构建与实机运行。
 - 真实 Windows ConPTY 下的快速自然退出、重启失败与后代进程逃逸压力测试。
 
 ## 已知风险
 
 ### 发布与平台风险
 
-1. `v0.1.1` 候选安装包仍未正式代码签名或 macOS 公证，也没有独立 checksum、签名或 provenance 资产。Release 必须先保持 Draft、Pre-release，完成原生资产核验后再决定是否公开。
+1. `v0.1.2` 候选安装包仍未正式代码签名或 macOS 公证，也没有独立 checksum、签名或 provenance 资产。Release 必须先保持 Draft、Pre-release，完成原生资产核验后再决定是否公开。
 2. Windows 根进程由 `portable-pty` spawn 后才加入 Job Object，存在很小的 spawn → Job 绑定窗口；根进程若在绑定前立即创建后代，该后代理论上可能逃逸 Job。当前“完整进程树清理”仅对成功纳管范围成立。
 3. macOS/Linux shell 与 Windows PowerShell 的 quoting、路径和进程清理行为存在天然差异；发布前仍需原生平台安装包回归。
 4. 自动化测试虽已补充进程范围、Unix 所有权锚点、自然退出、清理幂等、启动闸门和句柄释放，但仍缺少真实 Windows ConPTY 生命周期、Tauri 事件顺序、前端和导入异常的端到端覆盖。
@@ -94,13 +95,13 @@ CommandDeck `v0.1.1` 已在本地形成发布候选：应用版本源统一，PT
 ### 维护项
 
 1. npm 的 `xterm` 与旧 addon 包已停止维护，上游迁移到 `@xterm/xterm` 及对应 `@xterm/addon-*` 包。
-2. 2026-07-23 的锁文件扫描曾命中若干 Rust 传递依赖告警；`v0.1.1` 发布前应重新扫描当前锁文件并评估可达性，不能仅凭版本命中断言应用可被利用或安全。
+2. 2026-07-23 的锁文件扫描曾命中若干 Rust 传递依赖告警；`v0.1.2` 发布前应重新扫描当前锁文件并评估可达性，不能仅凭版本命中断言应用可被利用或安全。
 3. 仓库忽略的 `src-tauri/target` 本地缓存曾引用重命名前的路径；遇到 Tauri permission 缓存错误时应使用仓库外独立 `CARGO_TARGET_DIR` 复验。
 4. 项目和 CI 约定使用 Node.js 24，但 `package.json` 尚未用 `engines` 或 `.nvmrc` 固定本地版本。
 
 ## 下一步
 
-1. 完成本地验收后提交候选，由 `v0.1.1` tag 触发四平台构建；核对 Ubuntu 汇总 job 创建的 Draft Pre-release 及全部资产。
+1. 完成本地验收后提交候选，由新的 `v0.1.2` tag 触发四平台构建；核对 Windows feature 修复、Ubuntu 汇总 job 创建的 Draft Pre-release 及全部资产。不要移动或复用不可变的 `v0.1.1` tag。
 2. 在 macOS ARM/Intel、Windows 和 Linux 上验证安装、启动、PTY 输出/输入、自然退出、关闭、重启失败与后代进程清理，再决定是否公开 Release。
 3. 建立代码签名、公证、checksum 和 provenance 策略，并收紧 Windows spawn → Job 绑定竞态。
 4. 补前端基础测试、导入数据边界测试和真实 ConPTY/Tauri 事件生命周期测试。
