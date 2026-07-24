@@ -147,7 +147,6 @@ jobs:
           if-no-files-found: error
           path: |
             src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.app.tar.gz
             src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
             src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
             src-tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
@@ -213,8 +212,7 @@ jobs:
               -name '*.exe' -o \
               -name '*.AppImage' -o \
               -name '*.deb' -o \
-              -name '*.rpm' -o \
-              -name '*.app.tar.gz' \
+              -name '*.rpm' \
             \) -print0
           )
           gh release create "${GITHUB_REF_NAME}" "${assets[@]}" \
