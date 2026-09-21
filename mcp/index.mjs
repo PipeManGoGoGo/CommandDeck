@@ -270,7 +270,7 @@ rl.on("line", async (line) => {
       reply(id, {
         protocolVersion: "2024-11-05",
         capabilities: { tools: {} },
-        serverInfo: { name: "commanddeck", version: "0.1.3" },
+        serverInfo: { name: "commanddeck", version: "0.1.4" },
       });
       return;
     }

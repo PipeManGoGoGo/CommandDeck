@@ -1,3 +1,9 @@
+# CommandDeck v0.1.4
+
+修复 Linux/Windows 质量检查下 macOS 专用图标转换依赖的条件编译，恢复四平台发布流水线。
+
+---
+
 # CommandDeck v0.1.3
 
 本版本将当前本地测试版的交互与 Agent 调试能力同步到正式仓库：
