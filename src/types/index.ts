@@ -9,6 +9,7 @@ export interface Command {
   id: string;
   label: string;
   command: string;
+  windows_command?: string;
 }
 
 export interface Tool {
@@ -22,7 +23,12 @@ export interface Tool {
   install_command?: string;
   download_url?: string;
   verify_command?: string;
+  working_dir?: string;
+  trashed?: boolean;
 }
+
+export type NameConflictPolicy = "skip" | "rename" | "overwrite";
+export type PathStatus = "unlocated" | "ready" | "missing";
 
 export interface ToolTerminal {
   id: string;
@@ -48,6 +54,17 @@ export interface Settings {
   theme: ThemeMode;
 }
 
+export interface McpActionRecord {
+  requestId: string;
+  op: string;
+  ok: boolean;
+  error?: string;
+  summary: string;
+  toolId?: string;
+  commandId?: string;
+  at: number;
+}
+
 export interface ResourceSnapshot {
   systemCpuPercent: number;
   systemMemoryUsedBytes: number;
@@ -64,10 +81,31 @@ export interface ExportedTool {
   category: string;
   description?: string;
   icon?: string;
-  download_url: string;
-  install_type: "git" | "binary" | "python" | "custom";
-  install_command: string;
+  download_url?: string;
+  install_type?: "git" | "binary" | "python" | "custom";
+  install_command?: string;
   verify_command?: string;
-  commands: { label: string; command: string }[];
+  commands: { label: string; command: string; windows_command?: string }[];
   note?: string;
+  files?: string;
+}
+
+export interface ImportToolInput {
+  name: string;
+  category: string;
+  description?: string;
+  icon?: string;
+  download_url?: string;
+  install_command?: string;
+  verify_command?: string;
+  commands: { label: string; command: string; windows_command?: string }[];
+  note?: string;
+  files?: string;
+}
+
+export interface ImportResult {
+  imported: number;
+  skipped: number;
+  renamed: number;
+  overwritten: number;
 }

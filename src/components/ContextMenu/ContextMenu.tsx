@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useMenuMotion } from "../../motion";
 
 interface MenuItem {
   label: string;
@@ -15,24 +16,31 @@ interface Props {
 }
 
 export function ContextMenu({ x, y, items, onClose }: Props) {
-  const ref = useRef<HTMLDivElement>(null);
+  const { ref, close } = useMenuMotion(onClose);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
-        onClose();
+        close();
       }
     };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [onClose]);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [close, ref]);
 
   return createPortal(
     <div
       ref={ref}
       role="menu"
       onMouseDown={(event) => event.stopPropagation()}
-      className="fixed z-50 bg-gray-800 border border-gray-600 rounded-lg shadow-xl py-1 min-w-[140px]"
+      className="cd-menu fixed z-50"
       style={{
         left: Math.max(8, Math.min(x, window.innerWidth - 180)),
         top: Math.max(8, Math.min(y, window.innerHeight - Math.min(320, items.length * 36 + 16))),
@@ -43,13 +51,9 @@ export function ContextMenu({ x, y, items, onClose }: Props) {
           key={i}
           onClick={() => {
             item.onClick();
-            onClose();
+            close();
           }}
-          className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
-            item.danger
-              ? "text-red-400 hover:bg-red-900/30"
-              : "text-gray-200 hover:bg-gray-700"
-          }`}
+          className={item.danger ? "text-red-400" : ""}
         >
           {item.label}
         </button>

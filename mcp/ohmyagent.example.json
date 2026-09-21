@@ -1,0 +1,9 @@
+{
+  "servers": [
+    {
+      "name": "commanddeck",
+      "command": "node",
+      "args": ["/path/to/CommandDeck/mcp/index.mjs"]
+    }
+  ]
+}

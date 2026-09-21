@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { staggerList } from "../../motion";
 import type { ResourceSnapshot } from "../../types";
 import { getResourceSnapshot } from "../../utils/tauri";
 
@@ -11,9 +12,9 @@ function levelFor(percent: number): Level {
 }
 
 const levelClass: Record<Level, string> = {
-  normal: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
-  warning: "border-amber-400/25 bg-amber-400/10 text-amber-300",
-  critical: "border-red-400/30 bg-red-400/10 text-red-300",
+  normal: "res-normal",
+  warning: "res-warning",
+  critical: "res-critical",
 };
 
 function formatBytes(bytes: number): string {
@@ -32,7 +33,7 @@ function MetricPill({ label, value, title }: { label: string; value: number; tit
   return (
     <span
       title={title}
-      className={`rounded-md border px-2 py-1 text-[10px] font-medium tabular-nums ${levelClass[level]}`}
+      className={`border px-1.5 py-0.5 font-mono text-[10px] tabular-nums ${levelClass[level]}`}
     >
       {level === "critical" && <span className="mr-1" aria-hidden="true">!</span>}
       {label} {Math.round(value)}%
@@ -73,6 +74,15 @@ export function ResourceMonitor() {
     };
   }, []);
 
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const introRef = useRef(false);
+
+  useLayoutEffect(() => {
+    if (!snapshot || introRef.current) return;
+    introRef.current = true;
+    staggerList(wrapRef.current?.children ?? null);
+  }, [snapshot]);
+
   if (!snapshot) {
     return (
       <span className={`mx-3 text-[10px] ${error ? "text-red-300" : "text-gray-600"}`} title={error ? "无法读取系统资源" : "正在读取系统资源"}>
@@ -86,7 +96,7 @@ export function ResourceMonitor() {
   const managedLevel = levelFor(Math.max(snapshot.managedCpuPercent, managedMemoryPercent));
 
   return (
-    <div className="mx-3 flex min-w-0 items-center gap-1.5" title={error ? "最近一次刷新失败，当前显示上次采样值" : "每 3 秒刷新一次"}>
+    <div ref={wrapRef} className="mx-3 flex min-w-0 items-center gap-1.5" title={error ? "最近一次刷新失败，当前显示上次采样值" : "每 3 秒刷新一次"}>
       <MetricPill
         label="CPU"
         value={snapshot.systemCpuPercent}
@@ -98,8 +108,8 @@ export function ResourceMonitor() {
         title={`整机内存：${formatBytes(snapshot.systemMemoryUsedBytes)} / ${formatBytes(snapshot.systemMemoryTotalBytes)}`}
       />
       <span
-        className={`min-w-0 truncate rounded-md border px-2 py-1 text-[10px] tabular-nums ${
-          snapshot.terminalInstances > 0 ? levelClass[managedLevel] : "border-gray-750 bg-gray-850 text-gray-500"
+        className={`min-w-0 truncate border px-1.5 py-0.5 font-mono text-[10px] tabular-nums ${
+          snapshot.terminalInstances > 0 ? levelClass[managedLevel] : "res-idle"
         }`}
         title={`CommandDeck 工具：${snapshot.terminalInstances} 个终端实例，CPU ${snapshot.managedCpuPercent.toFixed(1)}%，内存 ${formatBytes(snapshot.managedMemoryBytes)}，${snapshot.managedProcesses} 个进程，${snapshot.managedThreads} 个线程`}
       >

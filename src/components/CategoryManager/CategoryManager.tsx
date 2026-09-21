@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { staggerList, usePageEnter } from "../../motion";
 import { useStore } from "../../store";
 
 export function CategoryManager() {
@@ -14,6 +15,12 @@ export function CategoryManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const pageRef = usePageEnter<HTMLDivElement>();
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    staggerList(listRef.current?.querySelectorAll(".cd-panel") ?? null);
+  }, [categories.length]);
 
   const countByCategory = (catId: string) =>
     tools.filter((t) => t.category_id === catId).length;
@@ -50,25 +57,25 @@ export function CategoryManager() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-7">
+    <div ref={pageRef} className="flex-1 overflow-y-auto px-6 py-7">
       <div className="mx-auto max-w-2xl">
       <div className="mb-7 flex items-start justify-between">
-        <div><p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-400">Organization</p><h1 className="text-xl font-semibold text-gray-100">分类管理</h1><p className="mt-1 text-sm text-gray-500">调整分类名称、色彩与展示顺序。</p></div>
+        <div><p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-400">分类</p><h1 className="text-xl font-semibold text-gray-100">分类管理</h1><p className="mt-1 text-sm text-gray-500">调整分类名称、色彩与展示顺序。</p></div>
         <button
           type="button"
           onClick={() => backToCatalog()}
-          className="rounded-lg border border-gray-750 px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-850 hover:text-gray-100"
+          className="cd-btn"
         >
           关闭
         </button>
       </div>
 
-      <div className="space-y-2.5">
-        {error && <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">{error}</div>}
+      <div ref={listRef} className="space-y-2.5">
+        {error && <div className="border border-amber-400/20 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">{error}</div>}
         {categories.map((cat, index) => (
           <div
             key={cat.id}
-            className="flex items-center gap-3 rounded-xl border border-gray-750 bg-gray-850/70 px-4 py-3"
+            className="cd-panel flex items-center gap-3 px-4 py-3"
           >
             <label className="relative h-5 w-5 shrink-0 cursor-pointer overflow-hidden rounded-full ring-2 ring-gray-200/10" style={{ backgroundColor: cat.color || "#64748b" }} title="修改分类颜色">
               <input type="color" value={cat.color || "#64748b"} onChange={(event) => updateCategory(cat.id, { color: event.target.value })} className="absolute inset-0 h-8 w-8 cursor-pointer opacity-0" aria-label={`修改 ${cat.name} 的颜色`} />
@@ -79,7 +86,7 @@ export function CategoryManager() {
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleRename(cat.id)}
-                  className="min-w-0 flex-1 rounded-lg border border-gray-750 bg-gray-925 px-2.5 py-1.5 text-sm text-gray-100 focus:border-brand-500/60 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+                  className="cd-field min-w-0 flex-1 py-1.5"
                   autoFocus
                 />
                 <button
@@ -124,18 +131,18 @@ export function CategoryManager() {
         ))}
       </div>
 
-      <div className="mt-5 flex gap-2 rounded-xl border border-dashed border-gray-750 bg-gray-925/50 p-3">
+      <div className="mt-5 flex gap-2 border border-dashed border-gray-800 p-3">
         <input
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-          className="min-w-0 flex-1 rounded-lg border border-gray-750 bg-gray-925 px-3 py-2 text-sm text-gray-100 placeholder-gray-600 focus:border-brand-500/60 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+          className="cd-field min-w-0 flex-1"
           placeholder="新分类名称"
         />
         <button
           onClick={handleAdd}
           disabled={!newName.trim()}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-40"
+          className="cd-btn cd-btn-primary h-9"
         >
           添加
         </button>

@@ -2,7 +2,10 @@ import { useRef, useCallback, useState } from "react";
 import { useStore } from "../../store";
 import type { Tool } from "../../types";
 import { ContextMenu } from "../ContextMenu";
-import { confirm, message } from "@tauri-apps/plugin-dialog";
+import { message } from "@tauri-apps/plugin-dialog";
+import { AppIconImg } from "../AppIcon/AppIcon";
+import { dragPointer, endToolDrag, followDragIcon } from "../../utils/drag";
+import { TRASH_ID } from "../../utils/tree";
 
 interface Props {
   tool: Tool;
@@ -17,42 +20,20 @@ export function ToolCard({ tool }: Props) {
   const openToolForm = useStore((s) => s.openToolForm);
   const runCommand = useStore((s) => s.runCommand);
   const moveTool = useStore((s) => s.moveTool);
-  const deleteTool = useStore((s) => s.deleteTool);
+  const trashTool = useStore((s) => s.trashTool);
+  const closeTool = useStore((s) => s.closeTool);
   const runningCount = tv?.terminals.filter((t) => t.alive).length || 0;
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [starting, setStarting] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameDraft, setRenameDraft] = useState(tool.name);
+  const updateTool = useStore((s) => s.updateTool);
 
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
-  const pressedRef = useRef(false);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    pressedRef.current = true;
-    timerRef.current = setTimeout(() => {
-      pressedRef.current = false;
-      setDragToolId(tool.id);
-    }, 500);
-  }, [tool.id, setDragToolId]);
-
-  const handleMouseUp = useCallback(() => {
-    clearTimeout(timerRef.current);
-    if (pressedRef.current) {
-      // Short press → open tool
-      pressedRef.current = false;
-      openTool(tool.id);
-    }
-  }, [tool.id, openTool]);
-
-  const handleMouseLeave = useCallback(() => {
-    clearTimeout(timerRef.current);
-    pressedRef.current = false;
-  }, []);
-
-  const isDragging = dragToolId === tool.id;
+  const originRef = useRef<{ x: number; y: number } | null>(null);
+  const movedRef = useRef(false);
   const firstCommand = tool.commands[0];
 
-  const startFirstCommand = async () => {
+  const startFirstCommand = useCallback(async () => {
     if (!firstCommand || starting) return;
     setStarting(true);
     try {
@@ -63,16 +44,91 @@ export function ToolCard({ tool }: Props) {
     } finally {
       setStarting(false);
     }
+  }, [firstCommand, openTool, runCommand, starting, tool.id, tool.name]);
+
+  const activateTool = useCallback(() => {
+    const live = useStore.getState().toolViews[tool.id];
+    const running = live?.terminals.filter((t) => t.alive).length || 0;
+    if (running > 0) {
+      openTool(tool.id);
+      return;
+    }
+    if (firstCommand) {
+      void startFirstCommand();
+      return;
+    }
+    openTool(tool.id);
+  }, [firstCommand, openTool, startFirstCommand, tool.id]);
+
+  const commitRename = async () => {
+    const next = renameDraft.trim();
+    setRenaming(false);
+    if (!next || next === tool.name) return;
+    try {
+      await updateTool(tool.id, { name: next });
+    } catch (error) {
+      await message(`无法重命名：${String(error)}`, { title: tool.name, kind: "error" });
+    }
   };
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (e.button !== 0 || renaming) return;
+    const pointerId = e.pointerId;
+    originRef.current = { x: e.clientX, y: e.clientY };
+    movedRef.current = false;
+
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerId !== pointerId) return;
+      dragPointer.x = event.clientX;
+      dragPointer.y = event.clientY;
+      if (movedRef.current) {
+        if (useStore.getState().dropTargetCatId === TRASH_ID) return;
+        followDragIcon(tool.id, event.clientX, event.clientY);
+        return;
+      }
+      const origin = originRef.current;
+      if (!origin) return;
+      const dx = event.clientX - origin.x;
+      const dy = event.clientY - origin.y;
+      if (dx * dx + dy * dy < 36) return;
+      movedRef.current = true;
+      originRef.current = null;
+      setDragToolId(tool.id);
+    };
+
+    const blockNativeDrag = (event: Event) => event.preventDefault();
+
+    const onUp = (event: PointerEvent) => {
+      if (event.pointerId !== pointerId) return;
+      window.removeEventListener("pointermove", onMove, true);
+      window.removeEventListener("pointerup", onUp, true);
+      window.removeEventListener("pointercancel", onUp, true);
+      window.removeEventListener("dragstart", blockNativeDrag, true);
+      const dragged = movedRef.current;
+      const shouldOpen = Boolean(originRef.current) && !dragged && !renaming;
+      originRef.current = null;
+      if (shouldOpen) {
+        void activateTool();
+        return;
+      }
+      if (dragged) endToolDrag();
+    };
+
+    window.addEventListener("pointermove", onMove, true);
+    window.addEventListener("pointerup", onUp, true);
+    window.addEventListener("pointercancel", onUp, true);
+    window.addEventListener("dragstart", blockNativeDrag, true);
+  }, [activateTool, renaming, setDragToolId, tool.id]);
+
+  const isDragging = dragToolId === tool.id;
 
   return (
     <div
       role="button"
       tabIndex={0}
-      aria-label={`打开 ${tool.name}${runningCount ? `，${runningCount} 个进程运行中` : ""}`}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
+      aria-label={`${runningCount ? "打开" : "启动"} ${tool.name}${runningCount ? `，${runningCount} 个进程运行中` : ""}`}
+      onPointerDown={handlePointerDown}
+      onDragStart={(event) => event.preventDefault()}
       onContextMenu={(event) => {
         event.preventDefault();
         setMenu({ x: event.clientX, y: event.clientY });
@@ -80,78 +136,72 @@ export function ToolCard({ tool }: Props) {
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          openTool(tool.id);
+          void activateTool();
         }
       }}
-      title="单击打开，长按可移动到其他分类"
-      className={`relative overflow-hidden rounded-xl border bg-gray-850/80 transition-all duration-200 select-none ${
-        isDragging
-          ? "border-brand-400 opacity-50 scale-[0.98] shadow-xl"
-          : "border-gray-750/90 hover:-translate-y-0.5 hover:border-brand-400/35 cursor-pointer hover:bg-gray-850 hover:shadow-glow group"
-      }`}
+      title={tool.description || tool.name}
+      id={`tool-${tool.id}`}
+      className={`cd-app ${isDragging ? "is-dragging-source" : ""}`}
     >
-      <div className="p-4">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-gray-700/70 bg-gray-750/70 text-lg transition-colors group-hover:border-brand-400/20 group-hover:bg-brand-500/10">
+      <span className="cd-app-icon-slot">
+        {!isDragging && (
+          <span className={`cd-app-icon ${tool.icon ? "" : "is-letter"}`}>
             {tool.icon ? (
-              <img
-                src={tool.icon}
-                alt={tool.name}
-                className="w-6 h-6 object-contain"
-              />
+              <AppIconImg src={tool.icon} />
             ) : (
-              <span className="text-sm font-bold text-brand-300">
+              <span className="leading-none">
                 {tool.name.charAt(0).toUpperCase()}
               </span>
             )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate text-sm font-semibold text-gray-100">
-              {tool.name}
-            </h3>
-            {tool.description && (
-              <p className="mt-1 line-clamp-2 min-h-[2.25rem] text-xs leading-[1.125rem] text-gray-500">
-                {tool.description}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-4 flex min-h-[18px] items-center justify-between border-t border-gray-800 pt-3">
-          {runningCount > 0 ? (
-            <span className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              运行中 ×{runningCount}
-            </span>
-          ) : (
-            <span className="text-[10px] text-gray-600 transition-colors group-hover:text-gray-500">打开工具</span>
-          )}
-          {firstCommand ? (
-            <button
-              type="button"
-              disabled={starting}
-              onMouseDown={(event) => event.stopPropagation()}
-              onMouseUp={(event) => event.stopPropagation()}
-              onClick={(event) => {
-                event.stopPropagation();
-                void startFirstCommand();
-              }}
-              className="rounded-md bg-brand-600/15 px-2 py-1 text-[10px] font-medium text-brand-300 opacity-0 transition hover:bg-brand-600 hover:text-white group-hover:opacity-100 focus:opacity-100 disabled:opacity-50"
-            >
-              {starting ? "启动中…" : "▶ 启动"}
-            </button>
-          ) : (
-            <span className="text-[10px] text-gray-600">未配置命令</span>
-          )}
-        </div>
-      </div>
+            {runningCount > 0 && <span className="cd-app-dot" />}
+          </span>
+        )}
+      </span>
+      {renaming ? (
+        <input
+          autoFocus
+          value={renameDraft}
+          onPointerDown={(event) => event.stopPropagation()}
+          onPointerUp={(event) => event.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+          onChange={(event) => setRenameDraft(event.target.value)}
+          onBlur={() => void commitRename()}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") void commitRename();
+            if (event.key === "Escape") setRenaming(false);
+          }}
+          className="rename-field w-full text-center text-[11px]"
+        />
+      ) : (
+        <span
+          className="cd-app-name"
+          onDoubleClick={(event) => {
+            event.stopPropagation();
+            setRenameDraft(tool.name);
+            setRenaming(true);
+          }}
+        >
+          {tool.name}
+        </span>
+      )}
       {menu && (
         <ContextMenu
           x={menu.x}
           y={menu.y}
           onClose={() => setMenu(null)}
           items={[
-            ...(firstCommand ? [{ label: "启动", onClick: () => { void startFirstCommand(); } }] : []),
+            ...(runningCount > 0
+              ? [{ label: "打开", onClick: () => openTool(tool.id) }]
+              : firstCommand
+                ? [{ label: starting ? "启动中…" : "启动", onClick: () => { void startFirstCommand(); } }]
+                : [{ label: "打开", onClick: () => openTool(tool.id) }]),
+            {
+              label: "重命名",
+              onClick: () => {
+                setRenameDraft(tool.name);
+                setRenaming(true);
+              },
+            },
             { label: "编辑", onClick: () => openToolForm(tool.id) },
             ...categories
               .filter((category) => category.id !== tool.category_id)
@@ -163,20 +213,23 @@ export function ToolCard({ tool }: Props) {
                   );
                 },
               })),
+            ...(runningCount > 0
+              ? [{
+                  label: "关闭运行中的终端",
+                  onClick: () => {
+                    void closeTool(tool.id).catch((error) =>
+                      message(`关闭失败：${String(error)}`, { title: tool.name, kind: "error" })
+                    );
+                  },
+                }]
+              : []),
             {
-              label: "删除",
+              label: "移到回收站",
               danger: true,
               onClick: () => {
-                void confirm(`确定删除“${tool.name}”吗？此操作不会删除磁盘上的工具文件。`, {
-                  title: "删除工具",
-                  kind: "warning",
-                }).then((accepted) => {
-                  if (accepted) {
-                    return deleteTool(tool.id).catch((error) =>
-                      message(`删除失败：${String(error)}`, { title: tool.name, kind: "error" })
-                    );
-                  }
-                });
+                void trashTool(tool.id).catch((error) =>
+                  message(`无法移到回收站：${String(error)}`, { title: tool.name, kind: "error" })
+                );
               },
             },
           ]}

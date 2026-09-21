@@ -72,6 +72,26 @@ impl PtyStartGate {
     }
 }
 
+pub const SCROLLBACK_CAP: usize = 2 * 1024 * 1024;
+
+#[derive(Default)]
+pub struct PtyOutputBuf {
+    pub seq: u64,
+    pub bytes: Vec<u8>,
+}
+
+impl PtyOutputBuf {
+    pub fn push(&mut self, data: &[u8]) -> u64 {
+        self.seq += 1;
+        self.bytes.extend_from_slice(data);
+        if self.bytes.len() > SCROLLBACK_CAP {
+            let overflow = self.bytes.len() - SCROLLBACK_CAP;
+            self.bytes.drain(..overflow);
+        }
+        self.seq
+    }
+}
+
 pub struct PtySession {
     pub writer: Mutex<Option<Box<dyn std::io::Write + Send>>>,
     pub child: Mutex<ChildState>,
@@ -84,6 +104,12 @@ pub struct PtySession {
     pub reader_done: Arc<(Mutex<bool>, Condvar)>,
     pub finalized: AtomicBool,
     pub exit_emitted: AtomicBool,
+    pub tool_id: String,
+    pub command_id: String,
+    pub command_label: String,
+    pub command: String,
+    pub num: u32,
+    pub scrollback: Mutex<PtyOutputBuf>,
 }
 
 impl PtySession {

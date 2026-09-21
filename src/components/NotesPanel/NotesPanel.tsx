@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useStore } from "../../store";
-import { MarkdownContent } from "../MarkdownContent";
+import { NoteEditor } from "../NoteEditor";
+import { slideInX, slideOutX } from "../../motion";
 
 interface Props {
   toolId: string;
@@ -9,12 +10,28 @@ interface Props {
 
 export function NotesPanel({ toolId, onClose }: Props) {
   const tool = useStore((s) => (s.tools ?? []).find((t) => t.id === toolId));
-  const [width, setWidth] = useState(320);
+  const [width, setWidth] = useState(() => {
+    const stored = Number(localStorage.getItem("commanddeck-notes-width"));
+    return Number.isFinite(stored) && stored >= 240 && stored <= 640 ? stored : 360;
+  });
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const panelRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    const tween = slideInX(panelRef.current, 36);
+    return () => {
+      tween?.kill();
+    };
+  }, []);
+
+  const close = () => {
+    slideOutX(panelRef.current, 28, onClose);
+  };
 
   return (
     <aside
-      className="relative shrink-0 border-l border-gray-700 bg-gray-850 flex flex-col overflow-hidden"
+      ref={panelRef}
+      className="relative flex shrink-0 flex-col overflow-hidden border-l border-gray-800 bg-gray-950"
       style={{ width }}
       aria-label={`${tool?.name || "工具"}笔记`}
     >
@@ -30,9 +47,16 @@ export function NotesPanel({ toolId, onClose }: Props) {
         onPointerMove={(event) => {
           const drag = dragRef.current;
           if (!drag) return;
-          setWidth(Math.min(640, Math.max(240, drag.startWidth + drag.startX - event.clientX)));
+          const next = Math.min(640, Math.max(240, drag.startWidth + drag.startX - event.clientX));
+          setWidth(next);
         }}
         onPointerUp={(event) => {
+          const drag = dragRef.current;
+          if (drag) {
+            const next = Math.min(640, Math.max(240, drag.startWidth + drag.startX - event.clientX));
+            setWidth(next);
+            localStorage.setItem("commanddeck-notes-width", String(next));
+          }
           dragRef.current = null;
           event.currentTarget.releasePointerCapture(event.pointerId);
         }}
@@ -40,23 +64,16 @@ export function NotesPanel({ toolId, onClose }: Props) {
           dragRef.current = null;
         }}
       />
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700">
-        <span className="text-xs font-semibold text-gray-300">
-          📝 {tool?.name || ""} 笔记
+      <div className="flex items-center justify-between border-b border-gray-800 px-3 py-2">
+        <span className="font-display text-[10px] text-gray-400">
+          {tool?.name || ""} 笔记
         </span>
-        <button
-          onClick={onClose}
-          className="text-gray-500 hover:text-gray-200 text-xs"
-        >
+        <button onClick={close} className="cd-btn h-6 w-6 p-0" aria-label="关闭笔记">
           ✕
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto p-3">
-        {tool?.note ? (
-          <MarkdownContent>{tool.note}</MarkdownContent>
-        ) : (
-          <p className="text-xs text-gray-500">暂无笔记</p>
-        )}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
+        <NoteEditor toolId={toolId} compact />
       </div>
     </aside>
   );

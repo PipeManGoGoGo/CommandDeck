@@ -40,9 +40,17 @@ export default {
           400: "rgb(var(--amber-400) / <alpha-value>)",
         },
       },
+      fontFamily: {
+        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
+        mono: ["var(--mono-font)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+      },
       boxShadow: {
         panel: "var(--shadow-panel)",
         glow: "var(--shadow-glow)",
+      },
+      transitionTimingFunction: {
+        out: "cubic-bezier(0.22, 1, 0.36, 1)",
       },
     },
   },

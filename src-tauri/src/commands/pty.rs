@@ -1,5 +1,7 @@
 use crate::process_scope::ProcessScope;
-use crate::state::{ChildState, PtySession, PtyStartGate, PtyState, RootProcessState};
+use crate::state::{
+    ChildState, PtyOutputBuf, PtySession, PtyStartGate, PtyState, RootProcessState,
+};
 use portable_pty::{CommandBuilder, PtySize};
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Condvar, Mutex};
@@ -11,13 +13,45 @@ const ROOT_EXIT_TIMEOUT: Duration = Duration::from_secs(2);
 const READER_DRAIN_TIMEOUT: Duration = Duration::from_secs(2);
 const ROOT_WATCH_INTERVAL: Duration = Duration::from_millis(50);
 
+#[derive(serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PtyChunk {
+    pub seq: u64,
+    pub data: Vec<u8>,
+}
+
+#[derive(serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PtyReplay {
+    pub seq: u64,
+    pub data: Vec<u8>,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PtyInfo {
+    pub id: String,
+    pub tool_id: String,
+    pub command_id: String,
+    pub command_label: String,
+    pub command: String,
+    pub num: u32,
+    pub alive: bool,
+}
+
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub fn create_pty(
     command: String,
     cwd: Option<String>,
+    tool_id: Option<String>,
+    command_id: Option<String>,
+    command_label: Option<String>,
+    num: Option<u32>,
     state: State<'_, PtyState>,
     app: AppHandle,
 ) -> Result<String, String> {
+    let command_text = command.clone();
     let pty_pair = portable_pty::native_pty_system()
         .openpty(PtySize {
             rows: 24,
@@ -49,6 +83,10 @@ pub fn create_pty(
     };
 
     cmd.env("TERM", "xterm-256color");
+    cmd.env("COLORTERM", "truecolor");
+    cmd.env("CLICOLOR", "1");
+    cmd.env("CLICOLOR_FORCE", "1");
+    cmd.env("FORCE_COLOR", "1");
     #[cfg(not(target_os = "windows"))]
     if std::env::var_os("LANG").is_none() {
         cmd.env("LANG", "en_US.UTF-8");
@@ -107,6 +145,12 @@ pub fn create_pty(
         reader_done: Arc::clone(&reader_done),
         finalized: false.into(),
         exit_emitted: false.into(),
+        tool_id: tool_id.unwrap_or_default(),
+        command_id: command_id.unwrap_or_default(),
+        command_label: command_label.unwrap_or_default(),
+        command: command_text,
+        num: num.unwrap_or(0),
+        scrollback: Mutex::new(PtyOutputBuf::default()),
     });
 
     let inserted = state
@@ -160,7 +204,12 @@ fn spawn_reader(
             match reader.read(&mut buffer) {
                 Ok(0) => break,
                 Ok(count) => {
-                    let _ = app.emit(&event_name, &buffer[..count]);
+                    let chunk = buffer[..count].to_vec();
+                    let seq = match session.scrollback.lock() {
+                        Ok(mut buf) => buf.push(&chunk),
+                        Err(_) => break,
+                    };
+                    let _ = app.emit(&event_name, PtyChunk { seq, data: chunk });
                 }
                 Err(_) => break,
             }
@@ -407,11 +456,22 @@ fn get_session(state: &PtyState, pty_id: &str) -> Result<Option<Arc<PtySession>>
 }
 
 #[tauri::command]
-pub fn start_pty(pty_id: String, state: State<'_, PtyState>) -> Result<(), String> {
-    if let Some(session) = get_session(&state, &pty_id)? {
-        session.start_gate.release()?;
-    }
-    Ok(())
+pub fn start_pty(pty_id: String, state: State<'_, PtyState>) -> Result<PtyReplay, String> {
+    let Some(session) = get_session(&state, &pty_id)? else {
+        return Ok(PtyReplay {
+            seq: 0,
+            data: Vec::new(),
+        });
+    };
+    session.start_gate.release()?;
+    let buf = session
+        .scrollback
+        .lock()
+        .map_err(|_| "pty scrollback lock poisoned".to_string())?;
+    Ok(PtyReplay {
+        seq: buf.seq,
+        data: buf.bytes.clone(),
+    })
 }
 
 #[tauri::command]
@@ -479,6 +539,26 @@ pub fn count_ptys(state: State<'_, PtyState>) -> Result<usize, String> {
         .len())
 }
 
+#[tauri::command]
+pub fn list_ptys(state: State<'_, PtyState>) -> Result<Vec<PtyInfo>, String> {
+    let ptys = state
+        .ptys
+        .lock()
+        .map_err(|_| "pty state lock poisoned".to_string())?;
+    Ok(ptys
+        .iter()
+        .map(|(id, session)| PtyInfo {
+            id: id.clone(),
+            tool_id: session.tool_id.clone(),
+            command_id: session.command_id.clone(),
+            command_label: session.command_label.clone(),
+            command: session.command.clone(),
+            num: session.num,
+            alive: !session.process_terminated(),
+        })
+        .collect())
+}
+
 fn cleanup_all_sessions(state: &PtyState, app: &AppHandle) -> Result<(), String> {
     for _ in 0..8 {
         let sessions = state
@@ -513,10 +593,8 @@ pub fn kill_all_ptys(state: State<'_, PtyState>, app: AppHandle) -> Result<(), S
 #[tauri::command]
 pub fn confirm_close(state: State<'_, PtyState>, app: AppHandle) -> Result<(), String> {
     cleanup_all_sessions(&state, &app)?;
-    let window = app
-        .get_webview_window("main")
-        .ok_or("main window not found")?;
-    window.destroy().map_err(|error| error.to_string())
+    app.exit(0);
+    Ok(())
 }
 
 #[cfg(test)]

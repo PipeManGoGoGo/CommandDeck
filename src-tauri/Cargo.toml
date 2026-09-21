@@ -1,6 +1,6 @@
 [package]
 name = "commanddeck"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 description = "A local desktop workspace for organizing and running command-line tools."
 repository = "https://github.com/PipeManGoGoGo/CommandDeck"

@@ -111,7 +111,11 @@ pub fn read_settings(app: AppHandle, state: State<'_, StorageState>) -> Result<S
         // Preserve the selected workspace across the CommandDeck rebrand and
         // the earlier v0.1 bundle identifier change.
         if let Some(parent) = dir.parent() {
-            for legacy_identifier in ["com.secbox.desktop", "com.secbox.app"] {
+            for legacy_identifier in [
+                "com.commanddeck.desktop",
+                "com.secbox.desktop",
+                "com.secbox.app",
+            ] {
                 let legacy_path = parent.join(legacy_identifier).join("settings.json");
                 if legacy_path.exists() {
                     let data = fs::read_to_string(&legacy_path).map_err(|e| e.to_string())?;
