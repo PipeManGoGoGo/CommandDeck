@@ -45,23 +45,18 @@ export function bootSplash(root: HTMLElement | null) {
     instant([mark, lines, bar].filter(Boolean));
     return;
   }
-  const tl = gsap.timeline();
-  if (mark) {
-    tl.fromTo(
-      mark,
-      { opacity: 0, scale: 0.7, rotate: -8 },
-      { opacity: 1, scale: 1, rotate: 0, duration: 0.55, ease: EASE.spring }
-    );
-  }
-  tl.fromTo(lines, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.06, ease: EASE.out }, 0.12);
-  if (bar) {
-    gsap.fromTo(
-      bar,
-      { scaleX: 0.15, opacity: 0.4 },
-      { scaleX: 1, opacity: 1, duration: 1.15, ease: "sine.inOut", repeat: -1, yoyo: true }
-    );
-  }
-  return tl;
+  const ctx = gsap.context(() => {
+    const tl = gsap.timeline();
+    if (mark) {
+      tl.fromTo(
+        mark,
+        { opacity: 0, scale: 0.7, rotate: -8 },
+        { opacity: 1, scale: 1, rotate: 0, duration: 0.55, ease: EASE.spring }
+      );
+    }
+    tl.fromTo(lines, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.06, ease: EASE.out }, 0.12);
+  }, root);
+  return ctx;
 }
 
 export function bootShell(root: HTMLElement | null) {

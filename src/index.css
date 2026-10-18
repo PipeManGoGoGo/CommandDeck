@@ -549,6 +549,42 @@ body.is-dragging * {
 
 .cd-boot-bar {
   transform-origin: left center;
+  animation: cd-boot-bar 1.15s ease-in-out infinite alternate;
+}
+
+.cd-motion-paused .cd-pulse,
+.cd-motion-paused .is-spinning,
+.cd-motion-paused .cd-boot-bar {
+  animation-play-state: paused;
+}
+
+.cd-pulse {
+  animation: cd-pulse 1.8s ease-in-out infinite;
+}
+
+.is-spinning {
+  animation: cd-spin 0.7s linear infinite;
+}
+
+@keyframes cd-boot-bar {
+  from { transform: scaleX(0.15); opacity: 0.4; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
+@keyframes cd-pulse {
+  50% { opacity: 0.35; }
+}
+
+@keyframes cd-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cd-boot-bar,
+  .cd-pulse,
+  .is-spinning {
+    animation: none;
+  }
 }
 
 .cd-tab-ink {

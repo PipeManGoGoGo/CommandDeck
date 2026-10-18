@@ -24,8 +24,20 @@ fn request_quit(app: &tauri::AppHandle) {
     app.exit(0);
 }
 
+#[cfg(target_os = "linux")]
+fn tune_linux_webview() {
+    // WebKitGTK 2.52 on Wayland amplifies any invalidated frame through the
+    // DMA-BUF renderer. WKWebView and WebView2 do not read this variable.
+    if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
+        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "linux")]
+    tune_linux_webview();
+
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())

@@ -66,18 +66,12 @@ function bindSwitch(el: HTMLElement) {
 
 function bindPulse(el: HTMLElement) {
   if (motionReduced) return;
-  gsap.to(el, {
-    opacity: 0.35,
-    duration: 0.9,
-    yoyo: true,
-    repeat: -1,
-    ease: "sine.inOut",
-  });
+  el.classList.add("cd-pulse");
 }
 
 function bindSpin(el: HTMLElement) {
   if (motionReduced) return;
-  gsap.to(el, { rotation: 360, duration: 0.7, repeat: -1, ease: "none" });
+  el.classList.add("is-spinning");
 }
 
 function bindEl(node: Element) {
