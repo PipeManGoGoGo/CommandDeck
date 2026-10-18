@@ -1,3 +1,11 @@
+# CommandDeck v0.1.5
+
+- 优化窗口切换与页面动效：隐藏窗口时暂停动画，减少后台资源消耗。
+- 增加对系统降低动态效果偏好的尊重。
+- 保留 macOS、Windows、Linux 的跨平台发布配置。
+
+---
+
 # CommandDeck v0.1.4
 
 修复 Linux/Windows 质量检查下 macOS 专用图标转换依赖的条件编译，恢复四平台发布流水线。

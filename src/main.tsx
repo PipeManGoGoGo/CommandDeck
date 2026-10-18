@@ -23,3 +23,13 @@ ReactDOM.createRoot(rootEl).render(
   </React.StrictMode>
 );
 installChromeMotion(rootEl);
+
+const motionRoot = document.documentElement;
+const syncMotionPlayback = () => {
+  const paused = document.hidden;
+  motionRoot.classList.toggle("cd-motion-paused", paused);
+  if (paused) gsap.globalTimeline.pause();
+  else gsap.globalTimeline.resume();
+};
+document.addEventListener("visibilitychange", syncMotionPlayback);
+syncMotionPlayback();

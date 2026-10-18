@@ -1,10 +1,14 @@
 # CommandDeck 项目现状（AI 交接）
 
-> 最后核验：2026-07-24。`v0.1.2` 已完成 tag 构建并公开为 Pre-release；后续 AI 应先核对工作树、CI 和 GitHub Release 的实际状态。
+> 最后核验：2026-10-18。当前工作树基于 GitHub `main` 的 v0.1.4，并包含本地动效改动；正在准备 v0.1.5 Intel 离线迁移包。目标 Intel Mac 的 macOS 大版本尚未确认，不能宣称已完成目标机实测。
 
-## 一句话结论
+## 当前迁移工作
 
-CommandDeck `v0.1.2` 已于 2026-07-24 公开为 Pre-release。tag Actions 四平台构建和 release job 全部成功，Release 包含 7 个标准安装资产；当前不声称这些安装包已经完成跨平台实机安装验证。
+- GitHub `main` 与本地 v0.1.4 提交 `eec2a4d` 一致；GitHub 最新公开预发布版为 v0.1.4。
+- 当前分支 `chore/portable-intel-v0.1.5` 将本地动效改动与版本字段整理为 v0.1.5；发布前必须通过质量检查和 Intel 构建。
+- 用户工作区位于 `/Users/info/Simple/commanddeck`，包含 59 个工具；离线包不上传 GitHub，目标机首次启动手动选择包内 workspace。
+- 当前源机为 arm64，目标为 Intel x86_64；包内各工具须按 Mach-O/脚本/Java/Python 依赖逐项标记兼容性。
+
 
 ## 仓库与发布状态
 
